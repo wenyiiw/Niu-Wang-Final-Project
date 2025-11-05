@@ -79,13 +79,13 @@ We can also use the `date` for grouping. Count the number of arrests grouped by 
 
 ```{sql connection = con}
 SELECT
-EXTRACT(HOUR FROM date) AS hour,
-COUNT(*) AS n_arrests
+  EXTRACT(HOUR FROM date) AS hour,
+  COUNT(*) AS n_arrests
 FROM crime
 WHERE year = 2016
 AND arrest = TRUE
-GROUP BY hour
-ORDER BY hour;
+GROUP BY primary_type, hour
+ORDER BY n_arrests DESC, hour;
 ```
 
 The hour associated with the highest number of arrests is 19:00. This suggests that criminal incidents leading to arrests are most common during early evening hours, which is consistent with increased public activity and social interaction during that time.
@@ -150,23 +150,24 @@ Again, count the number of arrests grouped by `primary_type` of district 11 in y
 
 ```{r}
 crime_tbl %>%
-  filter(year == 2016,
-         district == 11,
-         arrest == TRUE) %>%
-  group_by(primary_type) %>%
-  tally(name = "n_arrests") %>%
-  arrange(desc(n_arrests))
+    filter(year == 2016,
+           district == 11,
+          arrest == TRUE) %>%
+group_by(primary_type) %>%
+tally(name = "n_arrests")%>%
+arrange(desc(n_arrests))
 ```
 
 Count the number of arrests grouped by `primary_type` and `year`, still only for district 11. Arrange the result by `year`.
 
 ```{r}
-crime_tbl %>%
+arrest_count_year <- crime_tbl %>%
   filter(district == 11, arrest == TRUE) %>%
   group_by(primary_type, year) %>%
   tally(name = "n_arrests") %>%
-  arrange(year) %>%
-  collect()
+  arrange(year, desc(n_arrests))  # 先年升序，再同年内按数量降序
+
+arrest_count_year
 ```
 
 Assign the results of the query above to a local R object.
@@ -174,13 +175,14 @@ Assign the results of the query above to a local R object.
 Confirm that you pulled the data to the local environment by displaying the first ten rows of the saved data set.
 
 ```{r}
-dist11_2016_dplyr <- crime_tbl %>%
-  filter(year == 2016, district == 11, arrest == TRUE) %>%
-  count(primary_type, name = "n_arrests") %>%
-  arrange(desc(n_arrests)) %>%
+arrest_count_year_local <- crime_tbl %>%
+  filter(district == 11, arrest == TRUE) %>%
+  group_by(primary_type, year) %>%
+  tally(name = "n_arrests") %>%
+  arrange(year, desc(n_arrests)) %>%   
   collect()
 
-head(dist11_2016_dplyr, 10)
+head(arrest_count_year_local, 10)
 ```
 
 Close the connection.
