@@ -7,6 +7,8 @@ format: pdf
 
 You may work in pairs or individually for this assignment. Make sure you join a group in Canvas if you are working in pairs. Turn in this assignment as an HTML or PDF file to ELMS. Make sure to include the R Markdown or Quarto file that was used to generate it. Include the GitHub link for the repository containing these files.
 
+Github link: [//github.com/beining619/BeiningNiu727](https://github.com/beining619/BeiningNiu727.git)
+
 ```{r}
 #| eval: false
 library(censusapi)
@@ -49,6 +51,12 @@ head(il_map)
 ```
 
 Join the ACS data with the map data. Not that `il_map` has a column `subregion` which includes county names. We need a corresponding variable in the ACS data to join both data sets. This needs some transformations, among which the function `tolower()` might be useful. Call the joined data `acs_map`.
+
+```{r}
+acs_il_c <- acs_il_c %>%
+  mutate(subregion = tolower(str_remove(NAME, " County, Illinois")))
+acs_map <- inner_join(il_map, acs_il_c, by = "subregion")
+```
 
 After you do this, plot a map of Illinois with Counties colored by per capita income.
 
