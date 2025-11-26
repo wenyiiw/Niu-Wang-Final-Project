@@ -85,13 +85,13 @@ hc_ward <- hclust(dist_mat, method = "ward.D2")
 Plot the dendrogram to find a reasonable number of clusters. Draw boxes around the clusters of your cluster solution.
 
 ```{r}
-fviz_dend(hc_ward, k = 5, rect = TRUE, cex = 0.5, main = "Cluster Dendrogram")
+fviz_dend(hc_ward, k = 4, rect = TRUE, cex = 0.5, main = "Cluster Dendrogram")
 ```
 
 Visualize the county clusters on a map. For this task, create a new `acs_map` object that now also includes cluster membership as a new column. This column should be called `cluster`.
 
 ```{r}
-cluster_groups <- cutree(hc_ward, k = 5)
+cluster_groups <- cutree(hc_ward, k = 4)
 acs_il_c_geo <- acs_il_c %>%
   filter(subregion %in% names(cluster_groups)) %>%
   mutate(cluster = as.factor(cluster_groups))
@@ -141,11 +141,13 @@ Since we want to use K Means in this section, we start by determining the optima
 fviz_nbclust(t_cluster_data, kmeans, method = "wss", k.max = 20)
 ```
 
+According to the Elbow Method plot above, the Total Within Sum of Square decreases rapidly as the number of clusters increases from 1 to 4. After k = 4, the curve begins to flatten out, indicating that adding more clusters yields diminishing returns. Therefore, I chose k = 4 as the optimal number of clusters.
+
 Run `kmeans()` for the optimal number of clusters based on the plot above.
 
 ```{r}
 set.seed(123)
-km_res <- kmeans(t_cluster_data, centers = 6, nstart = 25)
+km_res <- kmeans(t_cluster_data, centers = 4, nstart = 25)
 ```
 
 Find the mean population, household income and per capita income grouped by clusters. In addition, display the most frequent county that can be observed within each cluster.
