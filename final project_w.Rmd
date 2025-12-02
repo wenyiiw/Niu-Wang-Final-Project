@@ -1,0 +1,88 @@
+---
+title: "Final Project_W"
+author: "Wenyi Wang"
+date: "2025-12-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(fredr)
+library(lubridate)
+library(tsibble)
+library(gghighlight)
+```
+
+```{r}
+key <- readLines("~/Desktop/Fall 2025/SURVMETH 727/fredapi.txt")
+fredr_set_key(key)
+```
+
+```{r}
+unrate <- fredr(series_id = "UNRATE", frequency = "m") %>%
+  select(date, unrate = value)
+
+cpi <- fredr(series_id = "CPIAUCSL", frequency = "m") %>%
+  select(date, cpi = value)
+
+sentiment <- fredr(series_id = "UMCSENT", frequency = "m") %>%
+  select(date, sentiment = value)
+```
+
+```{r}
+fred_data <- unrate %>%
+  left_join(cpi, by = "date") %>%
+  left_join(sentiment, by = "date") %>%
+  mutate(
+    covid_dummy = ifelse(date >= as.Date("2020-03-01"), 1, 0),
+    month       = factor(format(date, "%m"))
+  )
+
+write.csv(fred_data, "fred_clean.csv", row.names = FALSE)
+```
+
+```{r}
+gt_long <- read.csv("/Users/wyi/Desktop/Fall 2025/SURVMETH 727/Final Project/gt_long.csv")
+gt_long$date <- as.Date(gt_long$date)
+```
+
+```{r}
+merged <- fred_data %>%
+  left_join(gt_long, by = "date") %>%
+  arrange(date) %>%
+  group_by(keyword) %>%
+  mutate(unrate_lag1 = lag(unrate, 1)) %>%
+  ungroup() %>%
+  filter(!is.na(trends_index),
+         !is.na(unrate_lag1))
+
+write.csv(merged, "merged.csv", row.names = FALSE)
+```
+
+```{r}
+pre  <- merged %>% filter(date <  as.Date("2020-03-01"))
+post <- merged %>% filter(date >= as.Date("2020-03-01"))
+```
+
+```{r}
+run_model <- function(df, kw){
+  d <- df %>% filter(keyword == kw)
+  lm(trends_index ~ unrate + unrate_lag1 + cpi + sentiment, data = d)}
+```
+
+```{r}
+keywords <- c("unemployment", "gas", "anxiety")
+
+for (kw in keywords) {
+  cat("\n======================", toupper(kw), "PRE-COVID ======================\n")
+  print(summary(run_model(pre, kw)))
+
+  cat("\n======================", toupper(kw), "POST-COVID =====================\n")
+  print(summary(run_model(post, kw)))
+}
+```
+
